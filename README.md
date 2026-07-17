@@ -140,13 +140,15 @@ The platform includes built-in observability using **Promptfoo**, **DeepEval**, 
 adaptive-assessment-platform/
 │
 ├── docs/
-│   └── architecture/
-│       └── overview/
-│           ├── phase1_system_architecture.drawio
-│           ├── phase1_system_architecture.png
-│           ├── phase1_agent_to_agent_architecture.drawio
-│           └── phase1_agent_to_agent_architecture.png
-│
+│   ├── architecture/
+│   │     └── overview/
+│   │       ├── phase1_system_architecture.drawio
+│   │       ├── phase1_system_architecture.png
+│   │       ├── phase1_agent_to_agent_architecture.drawio
+│   │       └── phase1_agent_to_agent_architecture.png
+│   ├──phase1_mvp.md
+│   └──platform_vision.md
+│ 
 ├── LICENSE
 └── README.md
 ```
@@ -173,7 +175,13 @@ adaptive-assessment-platform/
 ## Phase 2
 
 - ⬜ Coding Assessment Platform
+
+## Phase 3
+
 - ⬜ AI Interview Platform
+
+## Future (Beyond Phase 3)
+
 - ⬜ Learning Recommendation Engine
 - ⬜ Analytics Dashboard
 - ⬜ Enterprise Features
