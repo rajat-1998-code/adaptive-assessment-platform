@@ -1,4 +1,8 @@
 .env
 backend/app/__pycache__
+backend/app/api/__pycache__
 backend/app/core/__pycache__
 backend/.venv
+backend/.env
+backend/alembic/__pycache__
+**/__pycache__/
