@@ -6,3 +6,5 @@ backend/.venv
 backend/.env
 backend/alembic/__pycache__
 **/__pycache__/
+backend/.pytest_cache/
+backend/.ruff_cache/
