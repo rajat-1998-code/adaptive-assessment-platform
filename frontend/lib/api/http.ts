@@ -4,13 +4,15 @@ import type { ApiErrorResponse, ApiResponse } from "@/types/api";
 import { ApiError } from "./errors";
 
 function buildUrl(path: string) {
-  if (!env.apiBaseUrl) {
+  const baseUrl = env.serverApiBaseUrl || env.apiBaseUrl;
+
+  if (!baseUrl) {
     throw new ApiError(
-      "NEXT_PUBLIC_API_BASE_URL is not configured. Set it before calling the backend.",
+      "API_BASE_URL or NEXT_PUBLIC_API_BASE_URL is not configured. Set one before calling the backend.",
     );
   }
 
-  return new URL(path, env.apiBaseUrl).toString();
+  return new URL(path, baseUrl).toString();
 }
 
 export async function httpRequest<T>(
