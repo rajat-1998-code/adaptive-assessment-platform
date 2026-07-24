@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.core.database import check_db_connection
+from app.core.config import settings
 from app.core.redis_client import check_redis_connection
 
 router = APIRouter()
@@ -14,7 +15,7 @@ def health_check():
     Confirms the API process is running and able to respond to requests.
     Does NOT check database or Redis — see /health/ready for that.
     """
-    return {"status": "ok"}
+    return {"status": "healthy", "version": settings.APP_VERSION}
 
 
 @router.get("/health/ready", tags=["Health"])
