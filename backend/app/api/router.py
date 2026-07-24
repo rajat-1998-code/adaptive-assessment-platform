@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
-from app.core.database import check_db_connection
 from app.core.config import settings
+from app.core.database import check_db_connection
 from app.core.redis_client import check_redis_connection
 
 router = APIRouter()
