@@ -9,6 +9,7 @@ from alembic import context
 # Make the 'app' package importable when Alembic is run from backend/
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
+from app.auth import models  # noqa: F401, E402
 from app.core.config import settings  # noqa: E402
 from app.core.database import Base  # noqa: E402
 
@@ -24,10 +25,6 @@ config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 # This line sets up loggers basically.
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
-
-# Import your models here so Base.metadata is populated and
-# 'alembic revision --autogenerate' can detect schema changes.
-# from app.models import user  # noqa: F401  (added once models exist)
 
 target_metadata = Base.metadata
 
