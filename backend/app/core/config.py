@@ -1,4 +1,4 @@
-from pydantic import SecretStr
+from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -24,6 +24,40 @@ class Settings(BaseSettings):
 
     # --- CORS ---
     ALLOWED_ORIGINS: list[str] = ["http://localhost:3000"]
+
+    # --- Authentication ---
+    AUTH_ENABLED: bool = True
+    AUTH_PREFIX: str = "/auth"
+    AUTH_COOKIE_DOMAIN: str | None = None
+    AUTH_COOKIE_SECURE: bool = False
+    AUTH_COOKIE_SAMESITE: str = "lax"
+    AUTH_ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
+    AUTH_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    AUTH_OTP_EXPIRE_MINUTES: int = 10
+    AUTH_MAGIC_LINK_EXPIRE_MINUTES: int = 15
+    AUTH_JWT_ALGORITHM: str = "HS256"
+    AUTH_JWT_SECRET_KEY: SecretStr = SecretStr("change-me")
+    AUTH_ISSUER: str = "adaptive-assessment-platform"
+    AUTH_AUDIENCE: str = "adaptive-assessment-users"
+
+    @field_validator("DEBUG", mode="before")
+    @classmethod
+    def parse_debug_value(cls, value: object) -> object:
+        """
+        Accept conventional booleans plus environment-style values such as
+        "release" and "production" that may be injected by shells or IDEs.
+        """
+
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+
+            if normalized in {"1", "true", "yes", "on", "debug", "development"}:
+                return True
+
+            if normalized in {"0", "false", "no", "off", "release", "production"}:
+                return False
+
+        return value
 
     # --- PostgreSQL ---
     POSTGRES_USER: str = "postgres"

@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from app.auth.router import router as auth_router
 from app.core.config import settings
 from app.core.database import check_db_connection
 from app.core.redis_client import check_redis_connection
@@ -35,3 +36,5 @@ def readiness_check():
         "database": "connected" if db_ok else "unreachable",
         "redis": "connected" if redis_ok else "unreachable",
     }
+
+router.include_router(auth_router, prefix=settings.API_V1_PREFIX)
