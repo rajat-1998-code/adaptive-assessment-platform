@@ -37,4 +37,5 @@ def readiness_check():
         "redis": "connected" if redis_ok else "unreachable",
     }
 
+
 router.include_router(auth_router, prefix=settings.API_V1_PREFIX)
