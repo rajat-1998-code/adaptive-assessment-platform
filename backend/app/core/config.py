@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -25,6 +27,9 @@ class Settings(BaseSettings):
     # --- CORS ---
     ALLOWED_ORIGINS: list[str] = ["http://localhost:3000"]
 
+    # --- Frontend ---
+    FRONTEND_BASE_URL: str = "http://localhost:3000"
+
     # --- Authentication ---
     AUTH_ENABLED: bool = True
     AUTH_PREFIX: str = "/auth"
@@ -41,6 +46,18 @@ class Settings(BaseSettings):
     )
     AUTH_ISSUER: str = "adaptive-assessment-platform"
     AUTH_AUDIENCE: str = "adaptive-assessment-users"
+
+    # --- Email ---
+    EMAILS_ENABLED: bool = True
+    EMAIL_FROM_NAME: str = "Adaptive Assessment Platform"
+    EMAIL_FROM_ADDRESS: str = "noreply@localhost"
+    SMTP_HOST: str = "localhost"
+    SMTP_PORT: int = 1025
+    SMTP_USERNAME: str | None = None
+    SMTP_PASSWORD: SecretStr | None = None
+    SMTP_USE_TLS: bool = False
+    SMTP_USE_STARTTLS: bool = False
+    MAILHOG_UI_URL: str = "http://localhost:8025"
 
     @field_validator("DEBUG", mode="before")
     @classmethod
@@ -82,6 +99,10 @@ class Settings(BaseSettings):
     @property
     def REDIS_URL(self) -> str:
         return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/0"
+
+    @property
+    def EMAIL_TEMPLATE_DIR(self) -> Path:
+        return Path(__file__).resolve().parents[1] / "services" / "email" / "templates"
 
 
 settings = Settings()

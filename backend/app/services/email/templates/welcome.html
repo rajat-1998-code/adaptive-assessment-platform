@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block content %}
+<p style="margin:0 0 16px; font-size:16px; line-height:1.7; color:#223548;">
+  Your workspace is ready. You can start uploading material, generating adaptive assessments,
+  and tracking learning progress right away.
+</p>
+<p style="margin:0 0 24px;">
+  <a
+    href="{{ dashboard_url }}"
+    style="display:inline-block; padding:14px 20px; background:#0f4c81; color:#ffffff; text-decoration:none; border-radius:999px; font-weight:600;"
+  >
+    Open your dashboard
+  </a>
+</p>
+<p style="margin:0; font-size:14px; line-height:1.7; color:#5c7085;">
+  For now we are using a local testing sender address, which is completely fine for Phase 1
+  development before the production domain is ready.
+</p>
+{% endblock %}

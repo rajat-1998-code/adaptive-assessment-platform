@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block content %}
+<p style="margin:0 0 16px; font-size:16px; line-height:1.7; color:#223548;">
+  Use the secure link below to sign in without a password. It expires in
+  <strong>{{ magic_link_expiry_minutes }} minutes</strong>.
+</p>
+<p style="margin:0 0 24px;">
+  <a
+    href="{{ magic_link_url }}"
+    style="display:inline-block; padding:14px 20px; background:#2f7f66; color:#ffffff; text-decoration:none; border-radius:999px; font-weight:600;"
+  >
+    Sign in with magic link
+  </a>
+</p>
+<p style="margin:0; font-size:14px; line-height:1.7; color:#5c7085; word-break:break-all;">
+  If the button does not work, copy and paste this URL into your browser:<br />
+  <a href="{{ magic_link_url }}" style="color:#0f4c81;">{{ magic_link_url }}</a>
+</p>
+{% endblock %}
