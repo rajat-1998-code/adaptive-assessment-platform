@@ -1,6 +1,7 @@
 import logging
 
 from fastapi import FastAPI, Request, status
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -8,6 +9,26 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.auth.exceptions import AuthError
 
 logger = logging.getLogger(__name__)
+
+
+def _sanitize_validation_errors(errors: list[dict]) -> list[dict]:
+    """
+    Make Pydantic's raw error list JSON-safe.
+
+    When a field_validator raises ValueError (e.g. our password strength
+    check), Pydantic includes the original exception instance at
+    error["ctx"]["error"]. That instance isn't JSON serializable on its
+    own, so we stringify it before encoding the rest as usual.
+    """
+
+    sanitized = []
+    for error in errors:
+        cleaned = dict(error)
+        ctx = cleaned.get("ctx")
+        if isinstance(ctx, dict) and isinstance(ctx.get("error"), Exception):
+            cleaned["ctx"] = {**ctx, "error": str(ctx["error"])}
+        sanitized.append(cleaned)
+    return jsonable_encoder(sanitized)
 
 
 def register_exception_handlers(app: FastAPI) -> None:
@@ -31,7 +52,7 @@ def register_exception_handlers(app: FastAPI) -> None:
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             content={
                 "error": "Validation failed",
-                "details": exc.errors(),
+                "details": _sanitize_validation_errors(exc.errors()),
                 "path": str(request.url.path),
             },
         )

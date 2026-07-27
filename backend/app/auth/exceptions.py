@@ -31,3 +31,24 @@ class InvalidTokenError(AuthError):
 
     def __init__(self, message: str = "Invalid authentication token"):
         super().__init__(message, status.HTTP_401_UNAUTHORIZED)
+
+
+class DuplicateEmailError(AuthError):
+    """Raised when registering with an email that is already in use."""
+
+    def __init__(self, message: str = "An account with this email already exists"):
+        super().__init__(message, status.HTTP_409_CONFLICT)
+
+
+class InvalidCredentialsError(AuthError):
+    """Raised when login credentials do not match a known, active account."""
+
+    def __init__(self, message: str = "Invalid email or password"):
+        super().__init__(message, status.HTTP_401_UNAUTHORIZED)
+
+
+class InactiveAccountError(AuthError):
+    """Raised when a valid credential check succeeds but the account is disabled."""
+
+    def __init__(self, message: str = "This account has been deactivated"):
+        super().__init__(message, status.HTTP_403_FORBIDDEN)

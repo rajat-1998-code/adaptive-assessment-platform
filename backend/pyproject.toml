@@ -7,5 +7,11 @@ target-version = "py312"
 # UP = pyupgrade (modern syntax), B = bugbear (common bug patterns)
 select = ["E", "F", "I", "UP", "B"]
 
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI's dependency injection relies on calling Depends()/Query()/etc.
+# directly in argument defaults — that's the intended pattern, not the
+# mutable-default-argument bug B008 is designed to catch.
+extend-immutable-calls = ["fastapi.Depends", "fastapi.params.Depends"]
+
 [tool.ruff.format]
 quote-style = "double"
