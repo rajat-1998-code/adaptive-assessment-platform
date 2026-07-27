@@ -1,30 +1,59 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="color-scheme" content="light" />
+    <meta name="supported-color-schemes" content="light" />
     <title>{{ app_name }}</title>
+    <!--[if mso]>
+    <noscript>
+      <xml>
+        <o:OfficeDocumentSettings>
+          <o:PixelsPerInch>96</o:PixelsPerInch>
+        </o:OfficeDocumentSettings>
+      </xml>
+    </noscript>
+    <style>
+      table, td { border-collapse: collapse; }
+    </style>
+    <![endif]-->
+    <style>
+      body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+      table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+      img { -ms-interpolation-mode: bicubic; border: 0; line-height: 100%; outline: none; text-decoration: none; }
+      body { margin: 0; padding: 0; width: 100% !important; height: 100% !important; }
+
+      @media only screen and (max-width: 600px) {
+        .email-container { width: 100% !important; }
+        .email-padding { padding-left: 20px !important; padding-right: 20px !important; }
+        .email-header { padding: 24px 20px !important; }
+        .email-h1 { font-size: 24px !important; }
+      }
+    </style>
   </head>
-  <body style="margin:0; padding:0; background:#f3f7fb; color:#102033; font-family:Segoe UI, Arial, sans-serif;">
-    <div style="display:none; max-height:0; overflow:hidden; opacity:0;">
+  <body style="margin:0; padding:0; background:#f3f7fb; color:#102033; font-family:'Segoe UI', Helvetica, Arial, sans-serif;">
+    <div style="display:none; max-height:0; overflow:hidden; opacity:0; mso-hide:all;">
       {{ preheader }}
+      {% for _ in range(80) %}&zwnj;&nbsp;{% endfor %}
     </div>
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f3f7fb; padding:24px 12px;">
       <tr>
         <td align="center">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px; background:#ffffff; border-radius:20px; overflow:hidden;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" class="email-container" style="max-width:640px; background:#ffffff; border-radius:20px; overflow:hidden; box-shadow:0 1px 3px rgba(16,32,51,0.08);">
             <tr>
-              <td style="padding:28px 32px; background:linear-gradient(135deg, #0f4c81, #2f7f66); color:#ffffff;">
-                <p style="margin:0; font-size:12px; letter-spacing:0.18em; text-transform:uppercase;">
+              <td class="email-header email-padding" bgcolor="#0f4c81" style="padding:28px 32px; background:linear-gradient(135deg, #0f4c81, #2f7f66); color:#ffffff;">
+                <p style="margin:0; font-size:12px; letter-spacing:0.18em; text-transform:uppercase; color:#e3edf7;">
                   {{ app_name }}
                 </p>
-                <h1 style="margin:14px 0 0; font-size:28px; line-height:1.2;">
+                <h1 class="email-h1" style="margin:14px 0 0; font-size:28px; line-height:1.25; color:#ffffff; font-weight:600;">
                   {{ headline }}
                 </h1>
               </td>
             </tr>
             <tr>
-              <td style="padding:32px;">
+              <td class="email-padding" style="padding:32px;">
                 <p style="margin:0 0 16px; font-size:16px; line-height:1.7;">
                   Hi {{ recipient_name }},
                 </p>
@@ -32,12 +61,18 @@
               </td>
             </tr>
             <tr>
-              <td style="padding:20px 32px 28px; border-top:1px solid #e5edf5; color:#5c7085; font-size:13px; line-height:1.6;">
+              <td class="email-padding" style="padding:20px 32px 28px; border-top:1px solid #e5edf5; color:#5c7085; font-size:13px; line-height:1.6;">
                 <p style="margin:0 0 8px;">
-                  Need help? Reply to this email or reach us at {{ support_email }}.
+                  Need help? Reply to this email or reach us at
+                  <a href="mailto:{{ support_email }}" style="color:#0f4c81; text-decoration:none;">{{ support_email }}</a>.
                 </p>
-                <p style="margin:0;">
+                {% if mailhog_ui_url and app_environment == "development" %}
+                <p style="margin:0 0 8px;">
                   Local testing inbox: <a href="{{ mailhog_ui_url }}" style="color:#0f4c81;">{{ mailhog_ui_url }}</a>
+                </p>
+                {% endif %}
+                <p style="margin:0; color:#8496a8;">
+                  &copy;{% if current_year %} {{ current_year }}{% endif %} {{ app_name }}. All rights reserved.
                 </p>
               </td>
             </tr>
