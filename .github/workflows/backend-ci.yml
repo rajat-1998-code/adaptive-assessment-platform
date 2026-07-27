@@ -54,6 +54,16 @@ jobs:
           ruff check .
           ruff format --check .
 
+      - name: Apply database migrations
+        working-directory: backend
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: adaptive_assessment
+        run: alembic upgrade head
+
       - name: Run backend tests
         working-directory: backend
         env:
