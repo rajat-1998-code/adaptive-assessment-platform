@@ -36,7 +36,9 @@ class Settings(BaseSettings):
     AUTH_OTP_EXPIRE_MINUTES: int = 10
     AUTH_MAGIC_LINK_EXPIRE_MINUTES: int = 15
     AUTH_JWT_ALGORITHM: str = "HS256"
-    AUTH_JWT_SECRET_KEY: SecretStr = SecretStr("change-me")
+    AUTH_JWT_SECRET_KEY: SecretStr = SecretStr(
+        "change-me-with-at-least-32-characters-for-development"
+    )
     AUTH_ISSUER: str = "adaptive-assessment-platform"
     AUTH_AUDIENCE: str = "adaptive-assessment-users"
 

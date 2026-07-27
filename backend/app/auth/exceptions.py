@@ -24,3 +24,10 @@ class AuthConfigurationError(AuthError):
 
     def __init__(self, message: str = "Authentication configuration is invalid"):
         super().__init__(message, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class InvalidTokenError(AuthError):
+    """Raised when a JWT is missing, invalid, or expired."""
+
+    def __init__(self, message: str = "Invalid authentication token"):
+        super().__init__(message, status.HTTP_401_UNAUTHORIZED)
