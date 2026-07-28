@@ -47,6 +47,9 @@ class Settings(BaseSettings):
     AUTH_ISSUER: str = "adaptive-assessment-platform"
     AUTH_AUDIENCE: str = "adaptive-assessment-users"
 
+    # --- Guest sessions ---
+    GUEST_SESSION_EXPIRE_DAYS: int = 7
+
     # --- Email ---
     EMAILS_ENABLED: bool = True
     EMAIL_FROM_NAME: str = "Adaptive Assessment Platform"

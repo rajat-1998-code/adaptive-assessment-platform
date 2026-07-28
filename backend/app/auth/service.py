@@ -12,6 +12,7 @@ from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.assessments.service import migrate_guest_assessments_to_user
 from app.auth.constants import (
     MAGIC_LINK_RESEND_COOLDOWN_SECONDS,
     MAGIC_LINK_TOKEN_BYTES,
@@ -47,8 +48,10 @@ from app.auth.utils import (
     verify_password,
 )
 from app.core.config import settings
+from app.guest.service import end_guest_session, get_guest_id_from_request
 from app.services.email.service import EmailService
 from app.services.otp import issue_otp, verify_otp
+from app.uploads.service import migrate_guest_uploads_to_user
 
 logger = logging.getLogger(__name__)
 
@@ -104,6 +107,37 @@ def _client_metadata(request: Request) -> tuple[str | None, str | None]:
     user_agent = request.headers.get("user-agent")
     ip_address = request.client.host if request.client else None
     return user_agent, ip_address
+
+
+def _merge_guest_session(db: Session, *, request: Request, response: Response, user: User) -> None:
+    """
+    If the caller had an active guest session, reassign anything it owned
+    (uploads, assessments) to the newly authenticated user, then end the
+    guest session — it has nothing left to distinguish it.
+
+    A no-op if there's no guest cookie, which is the common case for
+    someone who registers/logs in without having used the app anonymously
+    first.
+    """
+
+    guest_id = get_guest_id_from_request(request)
+    if guest_id is None:
+        return
+
+    migrated_uploads = migrate_guest_uploads_to_user(db, guest_id=guest_id, user_id=user.id)
+    migrated_assessments = migrate_guest_assessments_to_user(db, guest_id=guest_id, user_id=user.id)
+    db.commit()
+
+    if migrated_uploads or migrated_assessments:
+        logger.info(
+            "Merged guest session %s into user %s (%d uploads, %d assessments)",
+            guest_id,
+            user.id,
+            migrated_uploads,
+            migrated_assessments,
+        )
+
+    end_guest_session(response, guest_id=guest_id)
 
 
 def _issue_session_tokens(
@@ -197,6 +231,7 @@ def register_user(
 
     _issue_session_tokens(db, user=user, request=request, response=response)
     _send_verification_otp(user, email_service=email_service)
+    _merge_guest_session(db, request=request, response=response, user=user)
 
     return AuthenticatedUser.model_validate(user)
 
@@ -225,6 +260,7 @@ def login_user(
         raise InactiveAccountError()
 
     _issue_session_tokens(db, user=user, request=request, response=response)
+    _merge_guest_session(db, request=request, response=response, user=user)
 
     return AuthenticatedUser.model_validate(user)
 
@@ -445,6 +481,7 @@ def verify_magic_link(
     db.commit()
 
     _issue_session_tokens(db, user=user, request=request, response=response)
+    _merge_guest_session(db, request=request, response=response, user=user)
 
     return AuthenticatedUser.model_validate(user)
 
