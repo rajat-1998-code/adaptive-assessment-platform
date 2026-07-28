@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import secrets
 import uuid
 from datetime import UTC, datetime, timedelta
 
@@ -11,15 +12,22 @@ from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.auth.constants import ROLE_STUDENT
+from app.auth.constants import (
+    MAGIC_LINK_RESEND_COOLDOWN_SECONDS,
+    MAGIC_LINK_TOKEN_BYTES,
+    ROLE_STUDENT,
+)
 from app.auth.exceptions import (
     AlreadyVerifiedError,
     DuplicateEmailError,
+    ExpiredMagicLinkError,
     InactiveAccountError,
     InvalidCredentialsError,
+    InvalidMagicLinkError,
     InvalidTokenError,
+    MagicLinkAlreadyUsedError,
 )
-from app.auth.models import RefreshToken, User, UserSession
+from app.auth.models import MagicLinkToken, RefreshToken, User, UserSession
 from app.auth.schemas import (
     AuthenticatedUser,
     AuthStatusResponse,
@@ -34,6 +42,7 @@ from app.auth.utils import (
     decode_jwt_token,
     hash_password,
     hash_refresh_token,
+    hash_token,
     set_auth_cookie,
     verify_password,
 )
@@ -330,6 +339,114 @@ def resend_verification_otp(user: User, *, email_service: EmailService) -> None:
         raise AlreadyVerifiedError()
 
     _send_verification_otp(user, email_service=email_service)
+
+
+def request_magic_link(
+    db: Session,
+    *,
+    email: str,
+    request: Request,
+    email_service: EmailService,
+) -> None:
+    """
+    Issue and email a passwordless sign-in link, if the email belongs to
+    an active account.
+
+    Always completes silently either way (no return value, never raises
+    for an unknown email or an active cooldown) — the router always sends
+    back the same generic message, so this never leaks which emails are
+    registered or how recently a link was last requested.
+    """
+
+    normalized = _normalize_email(email)
+    user = db.scalar(select(User).where(User.email == normalized))
+
+    if user is None or not user.is_active:
+        return
+
+    now = datetime.now(UTC)
+    cooldown_cutoff = now - timedelta(seconds=MAGIC_LINK_RESEND_COOLDOWN_SECONDS)
+    recent_token = db.scalar(
+        select(MagicLinkToken.id)
+        .where(
+            MagicLinkToken.user_id == user.id,
+            MagicLinkToken.created_at >= cooldown_cutoff,
+        )
+        .limit(1)
+    )
+    if recent_token is not None:
+        return
+
+    raw_token = secrets.token_urlsafe(MAGIC_LINK_TOKEN_BYTES)
+    user_agent, ip_address = _client_metadata(request)
+
+    db.add(
+        MagicLinkToken(
+            user_id=user.id,
+            email=normalized,
+            token_hash=hash_token(raw_token),
+            expires_at=now + timedelta(minutes=settings.AUTH_MAGIC_LINK_EXPIRE_MINUTES),
+            requested_ip=ip_address,
+            user_agent=user_agent,
+        )
+    )
+    db.commit()
+
+    if not settings.EMAILS_ENABLED:
+        return
+
+    magic_link_url = f"{settings.FRONTEND_BASE_URL}/auth/magic-link?token={raw_token}"
+
+    try:
+        email_service.send_magic_link_email(
+            to_address=user.email,
+            recipient_name=_display_name(user),
+            magic_link_url=magic_link_url,
+        )
+    except Exception:
+        logger.exception("Failed to send magic link email to %s", user.email)
+
+
+def verify_magic_link(
+    db: Session,
+    *,
+    token: str,
+    request: Request,
+    response: Response,
+) -> AuthenticatedUser:
+    """Consume a magic link token exactly once and start an authenticated session."""
+
+    stored_token = db.scalar(
+        select(MagicLinkToken).where(MagicLinkToken.token_hash == hash_token(token))
+    )
+
+    if stored_token is None:
+        raise InvalidMagicLinkError()
+
+    if stored_token.used_at is not None:
+        raise MagicLinkAlreadyUsedError()
+
+    now = datetime.now(UTC)
+    if stored_token.expires_at <= now:
+        raise ExpiredMagicLinkError()
+
+    user = db.get(User, stored_token.user_id)
+    if user is None or not user.is_active:
+        raise InvalidCredentialsError()
+
+    # Single-use: mark it consumed before doing anything else with it.
+    stored_token.used_at = now
+
+    # Clicking an emailed link proves inbox ownership just as strongly as
+    # submitting an OTP would, so treat a successful login as verification.
+    if not user.is_email_verified:
+        user.is_email_verified = True
+
+    db.commit()
+
+    _issue_session_tokens(db, user=user, request=request, response=response)
+
+    return AuthenticatedUser.model_validate(user)
 
 
 def logout_user(

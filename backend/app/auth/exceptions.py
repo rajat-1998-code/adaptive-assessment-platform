@@ -90,3 +90,24 @@ class AlreadyVerifiedError(AuthError):
 
     def __init__(self, message: str = "This email address is already verified."):
         super().__init__(message, status.HTTP_400_BAD_REQUEST)
+
+
+class InvalidMagicLinkError(AuthError):
+    """Raised when a magic link token doesn't match any issued token."""
+
+    def __init__(self, message: str = "This sign-in link is invalid."):
+        super().__init__(message, status.HTTP_400_BAD_REQUEST)
+
+
+class ExpiredMagicLinkError(AuthError):
+    """Raised when a magic link token's expiry has passed."""
+
+    def __init__(self, message: str = "This sign-in link has expired. Please request a new one."):
+        super().__init__(message, status.HTTP_400_BAD_REQUEST)
+
+
+class MagicLinkAlreadyUsedError(AuthError):
+    """Raised when a magic link token has already been consumed (single-use)."""
+
+    def __init__(self, message: str = "This sign-in link has already been used."):
+        super().__init__(message, status.HTTP_400_BAD_REQUEST)

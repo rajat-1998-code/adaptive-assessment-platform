@@ -113,6 +113,12 @@ class VerifyEmailRequest(BaseModel):
         return value
 
 
+class MagicLinkRequest(BaseModel):
+    """Payload for POST /auth/magic-link."""
+
+    email: EmailStr
+
+
 class AuthenticatedUser(BaseModel):
     """Public representation of a user returned by auth endpoints."""
 

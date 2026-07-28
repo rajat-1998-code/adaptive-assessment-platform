@@ -1,6 +1,6 @@
 """Authentication API router."""
 
-from fastapi import APIRouter, Depends, Request, Response, status
+from fastapi import APIRouter, Depends, Query, Request, Response, status
 from sqlalchemy.orm import Session
 
 from app.auth.constants import AUTH_TAG
@@ -11,6 +11,7 @@ from app.auth.schemas import (
     AuthMessageResponse,
     AuthStatusResponse,
     LoginRequest,
+    MagicLinkRequest,
     RegisterRequest,
     VerifyEmailRequest,
 )
@@ -20,8 +21,10 @@ from app.auth.service import (
     logout_user,
     refresh_session,
     register_user,
+    request_magic_link,
     resend_verification_otp,
     verify_email_otp,
+    verify_magic_link,
 )
 from app.core.config import settings
 from app.core.database import get_db
@@ -141,3 +144,43 @@ def resend_otp(
 
     resend_verification_otp(current_user, email_service=email_service)
     return AuthMessageResponse(message="Verification code sent")
+
+
+@router.post(
+    "/magic-link",
+    response_model=AuthMessageResponse,
+    summary="Request a passwordless sign-in link by email",
+)
+def request_magic_link_endpoint(
+    payload: MagicLinkRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    email_service: EmailService = Depends(get_email_service),
+) -> AuthMessageResponse:
+    """
+    Email a one-time sign-in link if the address belongs to an account.
+
+    Always returns the same generic message regardless of whether the
+    email is registered, to avoid leaking which addresses have accounts.
+    """
+
+    request_magic_link(db, email=payload.email, request=request, email_service=email_service)
+    return AuthMessageResponse(
+        message="If an account exists for that email, a sign-in link has been sent."
+    )
+
+
+@router.get(
+    "/magic-link/verify",
+    response_model=AuthenticatedUser,
+    summary="Verify a magic link token and sign in",
+)
+def verify_magic_link_endpoint(
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+    token: str = Query(..., min_length=1, description="The token from the emailed magic link"),
+) -> AuthenticatedUser:
+    """Consume a magic link token exactly once and start an authenticated session."""
+
+    return verify_magic_link(db, token=token, request=request, response=response)

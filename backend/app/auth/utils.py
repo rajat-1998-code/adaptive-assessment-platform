@@ -119,10 +119,16 @@ def decode_jwt_token(token: str, *, expected_token_type: str | None = None) -> T
     return token_payload
 
 
+def hash_token(token: str) -> str:
+    """Hash an opaque token for safe persistence (shared by refresh + magic link tokens)."""
+
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
 def hash_refresh_token(token: str) -> str:
     """Hash a refresh token for safe persistence."""
 
-    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+    return hash_token(token)
 
 
 def create_refresh_token_bundle(
