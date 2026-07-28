@@ -34,6 +34,7 @@ from app.auth.schemas import (
     AuthStatusResponse,
     LoginRequest,
     RegisterRequest,
+    UserSummary,
 )
 from app.auth.utils import (
     build_auth_cookie_names,
@@ -516,3 +517,20 @@ def logout_user(
             db.commit()
 
     clear_auth_cookies(response)
+
+
+def list_users(db: Session) -> list[UserSummary]:
+    """Return users in deterministic order for admin-only management endpoints."""
+
+    users = db.scalars(select(User).order_by(User.created_at.asc(), User.email.asc())).all()
+    return [UserSummary.model_validate(user) for user in users]
+
+
+def update_user_role(db: Session, *, user: User, role: str) -> AuthenticatedUser:
+    """Persist a new RBAC role for a user and return the updated public model."""
+
+    user.role = role
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return AuthenticatedUser.model_validate(user)

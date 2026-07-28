@@ -6,9 +6,9 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, UniqueConstraint, Uuid
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
-from app.auth.constants import ROLE_STUDENT
+from app.auth.constants import ROLE_STUDENT, SUPPORTED_ROLES
 from app.core.database import Base
 from app.core.mixins import TimestampMixin
 
@@ -50,6 +50,18 @@ class User(TimestampMixin, Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+
+    @validates("role")
+    def validate_role(self, key: str, value: str) -> str:
+        """Keep persisted roles inside the supported RBAC role set."""
+
+        normalized = value.strip().lower()
+
+        if normalized not in SUPPORTED_ROLES:
+            supported_roles = ", ".join(SUPPORTED_ROLES)
+            raise ValueError(f"Unsupported role '{value}'. Supported roles: {supported_roles}")
+
+        return normalized
 
 
 class UserSession(TimestampMixin, Base):

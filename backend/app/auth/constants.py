@@ -6,16 +6,45 @@ ACCESS_TOKEN_COOKIE_NAME = "adaptive_access_token"
 REFRESH_TOKEN_COOKIE_NAME = "adaptive_refresh_token"
 
 ROLE_STUDENT = "student"
-ROLE_INSTRUCTOR = "instructor"
-ROLE_REVIEWER = "reviewer"
+ROLE_PROFESSIONAL = "professional"
 ROLE_ADMIN = "admin"
 
 SUPPORTED_ROLES = (
     ROLE_STUDENT,
-    ROLE_INSTRUCTOR,
-    ROLE_REVIEWER,
+    ROLE_PROFESSIONAL,
     ROLE_ADMIN,
 )
+
+PERMISSION_PROFILE_READ = "profile:read"
+PERMISSION_ASSESSMENTS_TAKE = "assessments:take"
+PERMISSION_ASSESSMENTS_CREATE = "assessments:create"
+PERMISSION_USERS_READ = "users:read"
+PERMISSION_USERS_MANAGE = "users:manage"
+
+ROLE_PERMISSIONS: dict[str, frozenset[str]] = {
+    ROLE_STUDENT: frozenset(
+        {
+            PERMISSION_PROFILE_READ,
+            PERMISSION_ASSESSMENTS_TAKE,
+        }
+    ),
+    ROLE_PROFESSIONAL: frozenset(
+        {
+            PERMISSION_PROFILE_READ,
+            PERMISSION_ASSESSMENTS_TAKE,
+            PERMISSION_ASSESSMENTS_CREATE,
+        }
+    ),
+    ROLE_ADMIN: frozenset(
+        {
+            PERMISSION_PROFILE_READ,
+            PERMISSION_ASSESSMENTS_TAKE,
+            PERMISSION_ASSESSMENTS_CREATE,
+            PERMISSION_USERS_READ,
+            PERMISSION_USERS_MANAGE,
+        }
+    ),
+}
 
 PASSWORD_MIN_LENGTH = 8
 PASSWORD_MAX_LENGTH = 128

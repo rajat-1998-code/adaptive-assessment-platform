@@ -1,10 +1,32 @@
 """Authentication API router."""
 
-from fastapi import APIRouter, Depends, Query, Request, Response, status
+from uuid import UUID
+
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Path,
+    Query,
+    Request,
+    Response,
+    status,
+)
 from sqlalchemy.orm import Session
 
-from app.auth.constants import AUTH_TAG
-from app.auth.dependencies import get_current_user
+from app.auth.constants import (
+    AUTH_TAG,
+    PERMISSION_ASSESSMENTS_CREATE,
+    PERMISSION_USERS_MANAGE,
+    PERMISSION_USERS_READ,
+    ROLE_STUDENT,
+)
+from app.auth.dependencies import (
+    get_current_user,
+    get_role_permissions,
+    require_permissions,
+    require_roles,
+)
 from app.auth.models import User
 from app.auth.schemas import (
     AuthenticatedUser,
@@ -12,17 +34,23 @@ from app.auth.schemas import (
     AuthStatusResponse,
     LoginRequest,
     MagicLinkRequest,
+    ProtectedResourceMessage,
     RegisterRequest,
+    UserAuthorizationSummary,
+    UserRoleUpdateRequest,
+    UserSummary,
     VerifyEmailRequest,
 )
 from app.auth.service import (
     get_auth_status,
+    list_users,
     login_user,
     logout_user,
     refresh_session,
     register_user,
     request_magic_link,
     resend_verification_otp,
+    update_user_role,
     verify_email_otp,
     verify_magic_link,
 )
@@ -31,6 +59,17 @@ from app.core.database import get_db
 from app.services.email.service import EmailService, get_email_service
 
 router = APIRouter(prefix=settings.AUTH_PREFIX, tags=[AUTH_TAG])
+
+# Module-level singleton dependencies (avoids calling functions in argument
+# defaults, which ruff flags as B008).
+_require_student_role = require_roles(ROLE_STUDENT)
+_require_assessments_create = require_permissions(PERMISSION_ASSESSMENTS_CREATE)
+_require_users_read = require_permissions(PERMISSION_USERS_READ)
+_require_users_manage = require_permissions(PERMISSION_USERS_MANAGE)
+_user_id_path = Path(
+    ...,
+    description="The id of the user whose role should be changed",
+)
 
 
 @router.get("", response_model=AuthStatusResponse, summary="Authentication module status")
@@ -146,6 +185,65 @@ def resend_otp(
     return AuthMessageResponse(message="Verification code sent")
 
 
+@router.get(
+    "/me",
+    response_model=AuthenticatedUser,
+    summary="Get the currently authenticated user",
+)
+def get_me(current_user: User = Depends(get_current_user)) -> AuthenticatedUser:
+    """Return the signed-in user's public account profile."""
+
+    return AuthenticatedUser.model_validate(current_user)
+
+
+@router.get(
+    "/me/authorization",
+    response_model=UserAuthorizationSummary,
+    summary="Get the current user's role and granted permissions",
+)
+def get_my_authorization(
+    current_user: User = Depends(get_current_user),
+) -> UserAuthorizationSummary:
+    """Expose the effective RBAC role and permission view for the current user."""
+
+    return UserAuthorizationSummary(
+        role=current_user.role,
+        permissions=sorted(get_role_permissions(current_user.role)),
+    )
+
+
+@router.get(
+    "/student/portal",
+    response_model=ProtectedResourceMessage,
+    summary="Protected portal for student users only",
+)
+def student_portal(
+    current_user: User = Depends(_require_student_role),
+) -> ProtectedResourceMessage:
+    """Probe route used to validate strict student-only authorization."""
+
+    return ProtectedResourceMessage(
+        message="Student portal access granted",
+        role=current_user.role,
+    )
+
+
+@router.get(
+    "/professional/workspace",
+    response_model=ProtectedResourceMessage,
+    summary="Protected workspace for professional and admin users",
+)
+def professional_workspace(
+    current_user: User = Depends(_require_assessments_create),
+) -> ProtectedResourceMessage:
+    """Probe route used to validate professional-level permissions."""
+
+    return ProtectedResourceMessage(
+        message="Professional workspace access granted",
+        role=current_user.role,
+    )
+
+
 @router.post(
     "/magic-link",
     response_model=AuthMessageResponse,
@@ -184,3 +282,37 @@ def verify_magic_link_endpoint(
     """Consume a magic link token exactly once and start an authenticated session."""
 
     return verify_magic_link(db, token=token, request=request, response=response)
+
+
+@router.get(
+    "/admin/users",
+    response_model=list[UserSummary],
+    summary="List users (admin only)",
+)
+def admin_list_users(
+    _: User = Depends(_require_users_read),
+    db: Session = Depends(get_db),
+) -> list[UserSummary]:
+    """Return a compact list of users for admin management surfaces."""
+
+    return list_users(db)
+
+
+@router.patch(
+    "/admin/users/{user_id}/role",
+    response_model=AuthenticatedUser,
+    summary="Update a user's role (admin only)",
+)
+def admin_update_user_role(
+    payload: UserRoleUpdateRequest,
+    user_id: UUID = _user_id_path,
+    _: User = Depends(_require_users_manage),
+    db: Session = Depends(get_db),
+) -> AuthenticatedUser:
+    """Change a user's RBAC role."""
+
+    user = db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    return update_user_role(db, user=user, role=payload.role)

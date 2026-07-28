@@ -6,7 +6,12 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
-from app.auth.constants import OTP_LENGTH, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH
+from app.auth.constants import (
+    OTP_LENGTH,
+    PASSWORD_MAX_LENGTH,
+    PASSWORD_MIN_LENGTH,
+    SUPPORTED_ROLES,
+)
 
 
 class AuthStatusResponse(BaseModel):
@@ -130,6 +135,49 @@ class AuthenticatedUser(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class UserAuthorizationSummary(BaseModel):
+    """Current user's role and the permissions implied by that role."""
+
+    role: str
+    permissions: list[str]
+
+
+class ProtectedResourceMessage(BaseModel):
+    """Simple success response used by protected authorization probe routes."""
+
+    message: str
+    role: str
+
+
+class UserSummary(BaseModel):
+    """Compact user representation returned by admin-only listing endpoints."""
+
+    id: UUID
+    email: str
+    role: str
+    is_active: bool
+    is_email_verified: bool
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UserRoleUpdateRequest(BaseModel):
+    """Payload for admin role-management actions."""
+
+    role: str = Field(description="The target RBAC role for the user")
+
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, value: str) -> str:
+        normalized = value.strip().lower()
+
+        if normalized not in SUPPORTED_ROLES:
+            supported = ", ".join(SUPPORTED_ROLES)
+            raise ValueError(f"Role must be one of: {supported}")
+
+        return normalized
 
 
 class AuthMessageResponse(BaseModel):

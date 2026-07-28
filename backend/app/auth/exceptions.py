@@ -19,6 +19,13 @@ class AuthenticationRequiredError(AuthError):
         super().__init__(message, status.HTTP_401_UNAUTHORIZED)
 
 
+class AuthorizationDeniedError(AuthError):
+    """Raised when the caller is authenticated but lacks the required access."""
+
+    def __init__(self, message: str = "You do not have permission to access this resource"):
+        super().__init__(message, status.HTTP_403_FORBIDDEN)
+
+
 class AuthConfigurationError(AuthError):
     """Raised when auth configuration is missing or invalid."""
 
@@ -51,6 +58,13 @@ class InactiveAccountError(AuthError):
     """Raised when a valid credential check succeeds but the account is disabled."""
 
     def __init__(self, message: str = "This account has been deactivated"):
+        super().__init__(message, status.HTTP_403_FORBIDDEN)
+
+
+class InvalidRoleError(AuthError):
+    """Raised when a user record contains an unsupported role."""
+
+    def __init__(self, message: str = "This account has an invalid role"):
         super().__init__(message, status.HTTP_403_FORBIDDEN)
 
 
