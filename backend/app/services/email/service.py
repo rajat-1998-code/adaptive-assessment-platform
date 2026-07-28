@@ -213,3 +213,15 @@ class EmailService:
             "app_environment": settings.ENVIRONMENT,
             "current_year": datetime.now(UTC).year,
         }
+
+
+def get_email_service() -> EmailService:
+    """
+    FastAPI dependency provider for EmailService.
+
+    Routes should depend on this (rather than instantiating EmailService
+    directly) so tests can override it with a fake transport instead of
+    talking to a real SMTP server.
+    """
+
+    return EmailService()

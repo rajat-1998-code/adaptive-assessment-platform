@@ -4,9 +4,9 @@ import re
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
-from app.auth.constants import PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH
+from app.auth.constants import OTP_LENGTH, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH
 
 
 class AuthStatusResponse(BaseModel):
@@ -98,6 +98,19 @@ class LoginRequest(BaseModel):
 
     email: EmailStr
     password: str
+
+
+class VerifyEmailRequest(BaseModel):
+    """Payload for POST /auth/verify-email."""
+
+    code: str = Field(min_length=OTP_LENGTH, max_length=OTP_LENGTH)
+
+    @field_validator("code")
+    @classmethod
+    def validate_code_is_numeric(cls, value: str) -> str:
+        if not value.isdigit():
+            raise ValueError("Verification code must be a numeric code")
+        return value
 
 
 class AuthenticatedUser(BaseModel):

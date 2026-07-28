@@ -4,12 +4,15 @@ from fastapi import APIRouter, Depends, Request, Response, status
 from sqlalchemy.orm import Session
 
 from app.auth.constants import AUTH_TAG
+from app.auth.dependencies import get_current_user
+from app.auth.models import User
 from app.auth.schemas import (
     AuthenticatedUser,
     AuthMessageResponse,
     AuthStatusResponse,
     LoginRequest,
     RegisterRequest,
+    VerifyEmailRequest,
 )
 from app.auth.service import (
     get_auth_status,
@@ -17,9 +20,12 @@ from app.auth.service import (
     logout_user,
     refresh_session,
     register_user,
+    resend_verification_otp,
+    verify_email_otp,
 )
 from app.core.config import settings
 from app.core.database import get_db
+from app.services.email.service import EmailService, get_email_service
 
 router = APIRouter(prefix=settings.AUTH_PREFIX, tags=[AUTH_TAG])
 
@@ -47,10 +53,17 @@ def register(
     request: Request,
     response: Response,
     db: Session = Depends(get_db),
+    email_service: EmailService = Depends(get_email_service),
 ) -> AuthenticatedUser:
-    """Create a new user, then sign them in immediately via auth cookies."""
+    """Create a new user, sign them in immediately, and email a verification OTP."""
 
-    return register_user(db, payload=payload, request=request, response=response)
+    return register_user(
+        db,
+        payload=payload,
+        request=request,
+        response=response,
+        email_service=email_service,
+    )
 
 
 @router.post(
@@ -98,3 +111,33 @@ def logout(
 
     logout_user(db, request=request, response=response)
     return AuthMessageResponse(message="Logged out successfully")
+
+
+@router.post(
+    "/verify-email",
+    response_model=AuthenticatedUser,
+    summary="Verify a newly registered account with the emailed OTP",
+)
+def verify_email(
+    payload: VerifyEmailRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> AuthenticatedUser:
+    """Confirm a submitted OTP and mark the current user's email as verified."""
+
+    return verify_email_otp(db, user=current_user, code=payload.code)
+
+
+@router.post(
+    "/resend-otp",
+    response_model=AuthMessageResponse,
+    summary="Resend the email verification code",
+)
+def resend_otp(
+    current_user: User = Depends(get_current_user),
+    email_service: EmailService = Depends(get_email_service),
+) -> AuthMessageResponse:
+    """Issue and send a fresh OTP to the current (unverified) user."""
+
+    resend_verification_otp(current_user, email_service=email_service)
+    return AuthMessageResponse(message="Verification code sent")

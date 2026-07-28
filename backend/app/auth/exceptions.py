@@ -52,3 +52,41 @@ class InactiveAccountError(AuthError):
 
     def __init__(self, message: str = "This account has been deactivated"):
         super().__init__(message, status.HTTP_403_FORBIDDEN)
+
+
+class OtpExpiredError(AuthError):
+    """Raised when no matching OTP exists in Redis (never issued, already used, or expired)."""
+
+    def __init__(
+        self,
+        message: str = "Verification code has expired or was not found. Please request a new one.",
+    ):
+        super().__init__(message, status.HTTP_400_BAD_REQUEST)
+
+
+class InvalidOtpError(AuthError):
+    """Raised when a submitted OTP does not match the stored code."""
+
+    def __init__(self, message: str = "Invalid verification code"):
+        super().__init__(message, status.HTTP_400_BAD_REQUEST)
+
+
+class OtpAttemptsExceededError(AuthError):
+    """Raised when too many incorrect OTP attempts have been made."""
+
+    def __init__(self, message: str = "Too many incorrect attempts. Please request a new code."):
+        super().__init__(message, status.HTTP_429_TOO_MANY_REQUESTS)
+
+
+class OtpResendCooldownError(AuthError):
+    """Raised when a new OTP is requested before the resend cooldown has elapsed."""
+
+    def __init__(self, message: str = "Please wait before requesting another code."):
+        super().__init__(message, status.HTTP_429_TOO_MANY_REQUESTS)
+
+
+class AlreadyVerifiedError(AuthError):
+    """Raised when verification is attempted on an already-verified account."""
+
+    def __init__(self, message: str = "This email address is already verified."):
+        super().__init__(message, status.HTTP_400_BAD_REQUEST)

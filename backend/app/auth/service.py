@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import uuid
 from datetime import UTC, datetime, timedelta
 
@@ -12,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.auth.constants import ROLE_STUDENT
 from app.auth.exceptions import (
+    AlreadyVerifiedError,
     DuplicateEmailError,
     InactiveAccountError,
     InvalidCredentialsError,
@@ -36,6 +38,10 @@ from app.auth.utils import (
     verify_password,
 )
 from app.core.config import settings
+from app.services.email.service import EmailService
+from app.services.otp import issue_otp, verify_otp
+
+logger = logging.getLogger(__name__)
 
 
 def get_auth_status() -> AuthStatusResponse:
@@ -53,6 +59,36 @@ def _normalize_email(email: str) -> str:
     """Keep email lookups and storage case-insensitive and whitespace-safe."""
 
     return email.strip().lower()
+
+
+def _display_name(user: User) -> str:
+    """Derive a friendly name for emails — the User model has no full_name field."""
+
+    return user.email.split("@", 1)[0]
+
+
+def _send_verification_otp(user: User, *, email_service: EmailService) -> None:
+    """Generate an OTP, store it in Redis, and email it to the user.
+
+    The OTP is generated and stored first, so it exists even if the actual
+    send fails (e.g. a transient SMTP outage) — the user can then use
+    resend-otp to get a fresh code once delivery is working again, rather
+    than the whole request (registration or resend) failing outright.
+    """
+
+    code = issue_otp(user.id)
+
+    if not settings.EMAILS_ENABLED:
+        return
+
+    try:
+        email_service.send_otp_email(
+            to_address=user.email,
+            recipient_name=_display_name(user),
+            otp_code=code,
+        )
+    except Exception:
+        logger.exception("Failed to send verification OTP email to %s", user.email)
 
 
 def _client_metadata(request: Request) -> tuple[str | None, str | None]:
@@ -123,8 +159,9 @@ def register_user(
     payload: RegisterRequest,
     request: Request,
     response: Response,
+    email_service: EmailService,
 ) -> AuthenticatedUser:
-    """Create a new email/password account and start an authenticated session."""
+    """Create a new email/password account, start a session, and send a verification OTP."""
 
     email = _normalize_email(payload.email)
 
@@ -150,6 +187,7 @@ def register_user(
         raise DuplicateEmailError() from None
 
     _issue_session_tokens(db, user=user, request=request, response=response)
+    _send_verification_otp(user, email_service=email_service)
 
     return AuthenticatedUser.model_validate(user)
 
@@ -267,6 +305,31 @@ def refresh_session(
     set_auth_cookie(response, token=refresh_bundle.token, token_type="refresh")
 
     return AuthenticatedUser.model_validate(user)
+
+
+def verify_email_otp(db: Session, *, user: User, code: str) -> AuthenticatedUser:
+    """Mark a user's email as verified once they submit a matching, unexpired OTP."""
+
+    if user.is_email_verified:
+        raise AlreadyVerifiedError()
+
+    verify_otp(user.id, code=code)
+
+    user.is_email_verified = True
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    return AuthenticatedUser.model_validate(user)
+
+
+def resend_verification_otp(user: User, *, email_service: EmailService) -> None:
+    """Issue and send a fresh OTP, subject to the resend cooldown in app.services.otp."""
+
+    if user.is_email_verified:
+        raise AlreadyVerifiedError()
+
+    _send_verification_otp(user, email_service=email_service)
 
 
 def logout_user(
