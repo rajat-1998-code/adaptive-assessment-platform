@@ -16,6 +16,8 @@ from app.assessments.service import migrate_guest_assessments_to_user
 from app.auth.constants import (
     MAGIC_LINK_RESEND_COOLDOWN_SECONDS,
     MAGIC_LINK_TOKEN_BYTES,
+    OAUTH_PROVIDER_GITHUB,
+    OAUTH_PROVIDER_GOOGLE,
     ROLE_STUDENT,
 )
 from app.auth.exceptions import (
@@ -27,8 +29,10 @@ from app.auth.exceptions import (
     InvalidMagicLinkError,
     InvalidTokenError,
     MagicLinkAlreadyUsedError,
+    OAuthAccountLinkError,
 )
 from app.auth.models import MagicLinkToken, RefreshToken, User, UserSession
+from app.auth.oauth import OAuthIdentity
 from app.auth.schemas import (
     AuthenticatedUser,
     AuthStatusResponse,
@@ -56,6 +60,11 @@ from app.uploads.service import migrate_guest_uploads_to_user
 
 logger = logging.getLogger(__name__)
 
+OAUTH_SUBJECT_FIELD_BY_PROVIDER = {
+    OAUTH_PROVIDER_GOOGLE: "google_oauth_subject",
+    OAUTH_PROVIDER_GITHUB: "github_oauth_subject",
+}
+
 
 def get_auth_status() -> AuthStatusResponse:
     """Return module-level auth configuration useful for validation and smoke tests."""
@@ -72,6 +81,13 @@ def _normalize_email(email: str) -> str:
     """Keep email lookups and storage case-insensitive and whitespace-safe."""
 
     return email.strip().lower()
+
+
+def _oauth_subject_field(provider: str) -> str:
+    try:
+        return OAUTH_SUBJECT_FIELD_BY_PROVIDER[provider]
+    except KeyError as exc:
+        raise OAuthAccountLinkError(f"Unsupported OAuth provider '{provider}'") from exc
 
 
 def _display_name(user: User) -> str:
@@ -197,6 +213,44 @@ def _issue_session_tokens(
     set_auth_cookie(response, token=refresh_bundle.token, token_type="refresh")
 
 
+def _find_user_by_oauth_identity(db: Session, identity: OAuthIdentity) -> User | None:
+    """Look up an existing account already linked to the provider subject."""
+
+    subject_field = _oauth_subject_field(identity.provider)
+    return db.scalar(select(User).where(getattr(User, subject_field) == identity.subject))
+
+
+def _link_oauth_identity(db: Session, *, user: User, identity: OAuthIdentity) -> User:
+    """
+    Attach a provider subject to an existing user if it is safe to do so.
+
+    If the user already linked the same provider to a different subject,
+    do not silently overwrite it: that would let a second social identity
+    hijack the same local account solely because the provider reported the
+    same email address.
+    """
+
+    subject_field = _oauth_subject_field(identity.provider)
+    existing_subject = getattr(user, subject_field)
+
+    if existing_subject and existing_subject != identity.subject:
+        raise OAuthAccountLinkError(
+            f"This {identity.provider.title()} account cannot be linked automatically."
+        )
+
+    setattr(user, subject_field, identity.subject)
+
+    # Successful social login proves inbox ownership for providers that
+    # return a verified email signal. If the provider could not confirm it,
+    # keep the prior state rather than upgrading trust.
+    if identity.email_verified:
+        user.is_email_verified = True
+
+    db.add(user)
+    db.flush()
+    return user
+
+
 def register_user(
     db: Session,
     *,
@@ -234,6 +288,60 @@ def register_user(
     _send_verification_otp(user, email_service=email_service)
     _merge_guest_session(db, request=request, response=response, user=user)
 
+    return AuthenticatedUser.model_validate(user)
+
+
+def authenticate_oauth_user(
+    db: Session,
+    *,
+    identity: OAuthIdentity,
+    request: Request,
+    response: Response,
+) -> AuthenticatedUser:
+    """Create or link a social-login account, then issue the normal session cookies."""
+
+    linked_user = _find_user_by_oauth_identity(db, identity)
+    if linked_user is not None:
+        if not linked_user.is_active:
+            raise InactiveAccountError()
+
+        _issue_session_tokens(db, user=linked_user, request=request, response=response)
+        _merge_guest_session(db, request=request, response=response, user=linked_user)
+        return AuthenticatedUser.model_validate(linked_user)
+
+    email = _normalize_email(identity.email)
+    existing_user = db.scalar(select(User).where(User.email == email))
+
+    if existing_user is not None:
+        if not existing_user.is_active:
+            raise InactiveAccountError()
+        if not identity.email_verified:
+            raise OAuthAccountLinkError(
+                f"This {identity.provider.title()} account cannot be linked "
+                "without a verified email."
+            )
+
+        user = _link_oauth_identity(db, user=existing_user, identity=identity)
+    else:
+        user = User(
+            email=email,
+            password_hash=None,
+            role=ROLE_STUDENT,
+            is_email_verified=identity.email_verified,
+            is_active=True,
+            google_oauth_subject=(
+                identity.subject if identity.provider == OAUTH_PROVIDER_GOOGLE else None
+            ),
+            github_oauth_subject=(
+                identity.subject if identity.provider == OAUTH_PROVIDER_GITHUB else None
+            ),
+        )
+        db.add(user)
+        db.flush()
+
+    _issue_session_tokens(db, user=user, request=request, response=response)
+    _merge_guest_session(db, request=request, response=response, user=user)
+    db.refresh(user)
     return AuthenticatedUser.model_validate(user)
 
 

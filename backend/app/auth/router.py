@@ -28,6 +28,7 @@ from app.auth.dependencies import (
     require_roles,
 )
 from app.auth.models import User
+from app.auth.oauth import OAuthService, get_oauth_service
 from app.auth.schemas import (
     AuthenticatedUser,
     AuthMessageResponse,
@@ -42,6 +43,7 @@ from app.auth.schemas import (
     VerifyEmailRequest,
 )
 from app.auth.service import (
+    authenticate_oauth_user,
     get_auth_status,
     list_users,
     login_user,
@@ -69,6 +71,11 @@ _require_users_manage = require_permissions(PERMISSION_USERS_MANAGE)
 _user_id_path = Path(
     ...,
     description="The id of the user whose role should be changed",
+)
+_magic_link_token_query = Query(
+    ...,
+    min_length=1,
+    description="The token from the emailed magic link",
 )
 
 
@@ -122,6 +129,43 @@ def login(
     """Verify credentials and start a new authenticated session."""
 
     return login_user(db, payload=payload, request=request, response=response)
+
+
+@router.get(
+    "/oauth/{provider}",
+    summary="Start a social login redirect flow",
+)
+async def oauth_authorize_endpoint(
+    provider: str,
+    request: Request,
+    oauth_service: OAuthService = Depends(get_oauth_service),
+):
+    """Redirect the browser to the selected OAuth provider."""
+
+    return await oauth_service.authorize_redirect(request, provider)
+
+
+@router.get(
+    "/oauth/{provider}/callback",
+    response_model=AuthenticatedUser,
+    summary="Handle an OAuth provider callback and sign the user in",
+)
+async def oauth_callback_endpoint(
+    provider: str,
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+    oauth_service: OAuthService = Depends(get_oauth_service),
+) -> AuthenticatedUser:
+    """Complete provider login, then issue the normal application auth cookies."""
+
+    identity = await oauth_service.fetch_identity(request, provider)
+    return authenticate_oauth_user(
+        db,
+        identity=identity,
+        request=request,
+        response=response,
+    )
 
 
 @router.post(
@@ -277,7 +321,7 @@ def verify_magic_link_endpoint(
     request: Request,
     response: Response,
     db: Session = Depends(get_db),
-    token: str = Query(..., min_length=1, description="The token from the emailed magic link"),
+    token: str = _magic_link_token_query,
 ) -> AuthenticatedUser:
     """Consume a magic link token exactly once and start an authenticated session."""
 

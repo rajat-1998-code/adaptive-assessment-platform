@@ -44,8 +44,15 @@ class Settings(BaseSettings):
     AUTH_JWT_SECRET_KEY: SecretStr = SecretStr(
         "change-me-with-at-least-32-characters-for-development"
     )
+    AUTH_SESSION_SECRET_KEY: SecretStr = SecretStr(
+        "change-me-session-secret-with-at-least-32-characters"
+    )
     AUTH_ISSUER: str = "adaptive-assessment-platform"
     AUTH_AUDIENCE: str = "adaptive-assessment-users"
+    AUTH_GOOGLE_CLIENT_ID: str | None = None
+    AUTH_GOOGLE_CLIENT_SECRET: SecretStr | None = None
+    AUTH_GITHUB_CLIENT_ID: str | None = None
+    AUTH_GITHUB_CLIENT_SECRET: SecretStr | None = None
 
     # --- Guest sessions ---
     GUEST_SESSION_EXPIRE_DAYS: int = 7

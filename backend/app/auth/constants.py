@@ -5,6 +5,9 @@ AUTH_TAG = "Authentication"
 ACCESS_TOKEN_COOKIE_NAME = "adaptive_access_token"
 REFRESH_TOKEN_COOKIE_NAME = "adaptive_refresh_token"
 
+OAUTH_PROVIDER_GOOGLE = "google"
+OAUTH_PROVIDER_GITHUB = "github"
+
 ROLE_STUDENT = "student"
 ROLE_PROFESSIONAL = "professional"
 ROLE_ADMIN = "admin"
@@ -45,6 +48,11 @@ ROLE_PERMISSIONS: dict[str, frozenset[str]] = {
         }
     ),
 }
+
+SUPPORTED_OAUTH_PROVIDERS = (
+    OAUTH_PROVIDER_GOOGLE,
+    OAUTH_PROVIDER_GITHUB,
+)
 
 PASSWORD_MIN_LENGTH = 8
 PASSWORD_MAX_LENGTH = 128

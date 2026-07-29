@@ -68,6 +68,41 @@ class InvalidRoleError(AuthError):
         super().__init__(message, status.HTTP_403_FORBIDDEN)
 
 
+class UnsupportedOAuthProviderError(AuthError):
+    """Raised when the requested OAuth provider is not supported."""
+
+    def __init__(self, message: str = "Unsupported OAuth provider"):
+        super().__init__(message, status.HTTP_404_NOT_FOUND)
+
+
+class OAuthConfigurationError(AuthError):
+    """Raised when an OAuth provider is requested without complete configuration."""
+
+    def __init__(self, message: str = "OAuth provider is not configured"):
+        super().__init__(message, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class OAuthAuthenticationError(AuthError):
+    """Raised when an OAuth provider callback cannot be completed."""
+
+    def __init__(self, message: str = "OAuth authentication failed"):
+        super().__init__(message, status.HTTP_401_UNAUTHORIZED)
+
+
+class OAuthEmailRequiredError(AuthError):
+    """Raised when a provider callback does not yield a usable email address."""
+
+    def __init__(self, message: str = "OAuth provider did not return a usable email address"):
+        super().__init__(message, status.HTTP_400_BAD_REQUEST)
+
+
+class OAuthAccountLinkError(AuthError):
+    """Raised when an OAuth identity cannot be linked safely to an existing account."""
+
+    def __init__(self, message: str = "OAuth account could not be linked automatically"):
+        super().__init__(message, status.HTTP_409_CONFLICT)
+
+
 class OtpExpiredError(AuthError):
     """Raised when no matching OTP exists in Redis (never issued, already used, or expired)."""
 
