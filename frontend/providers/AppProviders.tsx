@@ -1,11 +1,12 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { RoleProvider } from "@/providers/RoleProvider";
 
 interface AppProvidersProps {
   children: ReactNode;
 }
 
 export default function AppProviders({ children }: AppProvidersProps) {
-  return <>{children}</>;
+  return <RoleProvider>{children}</RoleProvider>;
 }
