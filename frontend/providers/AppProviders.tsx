@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { AuthProvider } from "@/providers/AuthProvider";
 import { RoleProvider } from "@/providers/RoleProvider";
 
 interface AppProvidersProps {
@@ -8,5 +9,9 @@ interface AppProvidersProps {
 }
 
 export default function AppProviders({ children }: AppProvidersProps) {
-  return <RoleProvider>{children}</RoleProvider>;
+  return (
+    <AuthProvider>
+      <RoleProvider>{children}</RoleProvider>
+    </AuthProvider>
+  );
 }

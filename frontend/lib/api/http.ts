@@ -21,6 +21,7 @@ export async function httpRequest<T>(
 ): Promise<ApiResponse<T>> {
   const response = await fetch(buildUrl(path), {
     ...init,
+    credentials: "include",
     headers: {
       Accept: "application/json",
       ...init?.headers,

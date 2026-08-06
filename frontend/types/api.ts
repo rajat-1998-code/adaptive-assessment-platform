@@ -9,6 +9,44 @@ export interface ApiResponse<T> {
   status: number;
 }
 
+export interface AuthenticatedUser {
+  id: string;
+  email: string;
+  role: string;
+  is_email_verified: boolean;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface AuthStatusResponse {
+  enabled: boolean;
+  token_type: string;
+  access_token_expire_minutes: number;
+  refresh_token_expire_days: number;
+}
+
+export interface AuthMessageResponse {
+  message: string;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface RegisterRequest {
+  email: string;
+  password: string;
+}
+
+export interface MagicLinkRequest {
+  email: string;
+}
+
+export interface VerifyEmailRequest {
+  code: string;
+}
+
 export interface HealthApiResponse {
   status: string;
   version?: string;

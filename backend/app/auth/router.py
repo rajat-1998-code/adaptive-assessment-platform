@@ -13,6 +13,7 @@ from fastapi import (
     status,
 )
 from sqlalchemy.orm import Session
+from starlette.responses import RedirectResponse
 
 from app.auth.constants import (
     AUTH_TAG,
@@ -156,16 +157,31 @@ async def oauth_callback_endpoint(
     response: Response,
     db: Session = Depends(get_db),
     oauth_service: OAuthService = Depends(get_oauth_service),
-) -> AuthenticatedUser:
+) -> AuthenticatedUser | RedirectResponse:
     """Complete provider login, then issue the normal application auth cookies."""
 
     identity = await oauth_service.fetch_identity(request, provider)
-    return authenticate_oauth_user(
+    accept_header = request.headers.get("accept", "").lower()
+    is_browser_request = "text/html" in accept_header
+
+    callback_response: Response = response
+    if is_browser_request:
+        callback_response = RedirectResponse(
+            url=f"{settings.FRONTEND_BASE_URL}/auth/oauth-success",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+
+    authenticated_user = authenticate_oauth_user(
         db,
         identity=identity,
         request=request,
-        response=response,
+        response=callback_response,
     )
+
+    if is_browser_request:
+        return callback_response
+
+    return authenticated_user
 
 
 @router.post(

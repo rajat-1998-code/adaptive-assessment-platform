@@ -1,4 +1,16 @@
 export const API_ENDPOINTS = {
+  auth: "/api/v1/auth",
+  authLogin: "/api/v1/auth/login",
+  authLogout: "/api/v1/auth/logout",
+  authMagicLink: "/api/v1/auth/magic-link",
+  authMagicLinkVerify: "/api/v1/auth/magic-link/verify",
+  authMe: "/api/v1/auth/me",
+  authOauthGithub: "/api/v1/auth/oauth/github",
+  authOauthGoogle: "/api/v1/auth/oauth/google",
+  authRefresh: "/api/v1/auth/refresh",
+  authRegister: "/api/v1/auth/register",
+  authResendOtp: "/api/v1/auth/resend-otp",
+  authVerifyEmail: "/api/v1/auth/verify-email",
   health: "/health",
   readiness: "/health/ready",
 } as const;
