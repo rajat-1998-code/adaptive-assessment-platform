@@ -167,7 +167,7 @@ async def oauth_callback_endpoint(
     callback_response: Response = response
     if is_browser_request:
         callback_response = RedirectResponse(
-            url=f"{settings.FRONTEND_BASE_URL}/auth/oauth-success",
+            url=settings.FRONTEND_BASE_URL,
             status_code=status.HTTP_303_SEE_OTHER,
         )
 

@@ -2,7 +2,6 @@ import Link from "next/link";
 
 import Logo from "@/components/common/Logo";
 import AuthStatus from "@/components/layout/AuthStatus";
-import SignInNavItem from "@/components/layout/SignInNavItem";
 import Container from "@/components/ui/Container";
 import RoleSwitcher from "@/components/layout/RoleSwitcher";
 
@@ -37,11 +36,10 @@ export default function Header() {
               </Link>
             ))}
 
-            <SignInNavItem />
+            <AuthStatus />
           </nav>
 
           <div className="flex items-center justify-self-end gap-3">
-            <AuthStatus />
             <RoleSwitcher />
           </div>
         </div>
