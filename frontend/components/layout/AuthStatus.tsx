@@ -7,7 +7,11 @@ import { createPortal } from "react-dom";
 import AuthModal from "@/components/auth/AuthModal";
 import { useAuth } from "@/providers/AuthProvider";
 
-function getInitials(email: string) {
+function getInitials(firstName: string | null, lastName: string | null, email: string) {
+  if (firstName || lastName) {
+    return `${firstName?.[0] ?? ""}${lastName?.[0] ?? ""}`.toUpperCase() || "U";
+  }
+
   const localPart = email.split("@", 1)[0] ?? email;
   const parts = localPart
     .replace(/[^a-zA-Z0-9]+/g, " ")
@@ -52,8 +56,12 @@ export default function AuthStatus() {
       return "U";
     }
 
-    return getInitials(user.email);
+    return getInitials(user.first_name, user.last_name, user.email);
   }, [user]);
+
+  const fullName = user
+    ? [user.first_name, user.last_name].filter(Boolean).join(" ") || user.email
+    : "";
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -183,12 +191,19 @@ export default function AuthStatus() {
                     Profile
                   </p>
                   <h2 className="mt-2 text-2xl font-semibold text-white">Account details</h2>
+                  <p className="mt-2 text-base font-medium text-[#ffb87a]">{fullName}</p>
                   <p className="mt-2 max-w-sm text-sm leading-6 text-slate-400">
                     Here is the signed-in profile currently active in this browser session.
                   </p>
                 </div>
 
                 <div className="mt-6 space-y-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-sm text-slate-400">Full name</span>
+                    <span className="max-w-[16rem] truncate text-sm font-medium text-white">
+                      {fullName}
+                    </span>
+                  </div>
                   <div className="flex items-center justify-between gap-4">
                     <span className="text-sm text-slate-400">Email</span>
                     <span className="max-w-[16rem] truncate text-sm font-medium text-white">

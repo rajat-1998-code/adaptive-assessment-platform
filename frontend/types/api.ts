@@ -12,6 +12,8 @@ export interface ApiResponse<T> {
 export interface AuthenticatedUser {
   id: string;
   email: string;
+  first_name: string | null;
+  last_name: string | null;
   role: string;
   is_email_verified: boolean;
   is_active: boolean;
@@ -37,6 +39,8 @@ export interface LoginRequest {
 export interface RegisterRequest {
   email: string;
   password: string;
+  first_name: string;
+  last_name: string;
 }
 
 export interface MagicLinkRequest {

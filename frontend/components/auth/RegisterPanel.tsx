@@ -77,7 +77,7 @@ export default function RegisterPanel({ onBackToLogin, onRegistered }: RegisterP
 
     startTransition(async () => {
       try {
-        await register({ email, password });
+        await register({ email, password, first_name: firstName, last_name: lastName });
         if (onRegistered) {
           onRegistered();
         } else {

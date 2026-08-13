@@ -91,6 +91,16 @@ class RegisterRequest(BaseModel):
 
     email: EmailStr
     password: str
+    first_name: str | None = Field(default=None, min_length=1, max_length=100)
+    last_name: str | None = Field(default=None, min_length=1, max_length=100)
+
+    @field_validator("first_name", "last_name")
+    @classmethod
+    def normalize_name(cls, value: str) -> str:
+        normalized = " ".join(value.split())
+        if not normalized:
+            raise ValueError("Name cannot be empty")
+        return normalized
 
     @field_validator("password")
     @classmethod
@@ -129,6 +139,8 @@ class AuthenticatedUser(BaseModel):
 
     id: UUID
     email: str
+    first_name: str | None = None
+    last_name: str | None = None
     role: str
     is_email_verified: bool
     is_active: bool

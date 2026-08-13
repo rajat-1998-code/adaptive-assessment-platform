@@ -269,6 +269,8 @@ def register_user(
 
     user = User(
         email=email,
+        first_name=payload.first_name,
+        last_name=payload.last_name,
         password_hash=hash_password(payload.password),
         role=ROLE_STUDENT,
         is_email_verified=False,
@@ -325,6 +327,8 @@ def authenticate_oauth_user(
     else:
         user = User(
             email=email,
+            first_name=identity.first_name,
+            last_name=identity.last_name,
             password_hash=None,
             role=ROLE_STUDENT,
             is_email_verified=identity.email_verified,

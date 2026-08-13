@@ -27,6 +27,8 @@ class OAuthIdentity:
     email_verified: bool
     provider: str
     subject: str
+    first_name: str | None = None
+    last_name: str | None = None
 
 
 class OAuthService:
@@ -125,6 +127,8 @@ class OAuthService:
             email_verified=bool(userinfo.get("email_verified", False)),
             provider=OAUTH_PROVIDER_GOOGLE,
             subject=subject,
+            first_name=str(userinfo.get("given_name") or "").strip() or None,
+            last_name=str(userinfo.get("family_name") or "").strip() or None,
         )
 
     async def _fetch_github_identity(self, client: Any, token: dict[str, Any]) -> OAuthIdentity:
@@ -149,6 +153,12 @@ class OAuthService:
             email_verified=bool(selected_email.get("verified", False)),
             provider=OAUTH_PROVIDER_GITHUB,
             subject=subject,
+            first_name=(str(profile.get("name") or "").strip().split(" ", 1)[0] or None),
+            last_name=(
+                str(profile.get("name") or "").strip().split(" ", 1)[1]
+                if " " in str(profile.get("name") or "").strip()
+                else None
+            ),
         )
 
     def _select_github_email(self, emails: list[dict[str, Any]]) -> dict[str, Any] | None:
