@@ -4,6 +4,7 @@ from app.auth.router import router as auth_router
 from app.core.config import settings
 from app.core.database import check_db_connection
 from app.core.redis_client import check_redis_connection
+from app.documents.router import router as documents_router
 from app.guest.router import router as guest_router
 from app.uploads.router import router as uploads_router
 
@@ -42,4 +43,5 @@ def readiness_check():
 
 router.include_router(auth_router, prefix=settings.API_V1_PREFIX)
 router.include_router(guest_router, prefix=settings.API_V1_PREFIX)
+router.include_router(documents_router, prefix=settings.API_V1_PREFIX)
 router.include_router(uploads_router, prefix=settings.API_V1_PREFIX)

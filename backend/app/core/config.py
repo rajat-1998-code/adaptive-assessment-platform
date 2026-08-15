@@ -69,6 +69,15 @@ class Settings(BaseSettings):
     SMTP_USE_STARTTLS: bool = False
     MAILHOG_UI_URL: str = "http://localhost:8025"
 
+    # --- S3-compatible object storage ---
+    S3_ENDPOINT_URL: str = "http://localhost:9000"
+    S3_ACCESS_KEY: str = "minioadmin"
+    S3_SECRET_KEY: SecretStr = SecretStr("minioadmin")
+    S3_BUCKET: str = "uploads"
+    S3_REGION: str = "us-east-1"
+    S3_PRESIGNED_URL_EXPIRE_SECONDS: int = 300
+    DOCUMENT_MAX_SIZE_BYTES: int = 25 * 1024 * 1024
+
     @field_validator("DEBUG", mode="before")
     @classmethod
     def parse_debug_value(cls, value: object) -> object:
