@@ -56,7 +56,7 @@ from app.core.config import settings
 from app.guest.service import end_guest_session, get_guest_id_from_request
 from app.services.email.service import EmailService
 from app.services.otp import issue_otp, verify_otp
-from app.uploads.service import migrate_guest_uploads_to_user
+from app.uploads.service import migrate_guest_documents_to_user
 
 logger = logging.getLogger(__name__)
 
@@ -141,16 +141,16 @@ def _merge_guest_session(db: Session, *, request: Request, response: Response, u
     if guest_id is None:
         return
 
-    migrated_uploads = migrate_guest_uploads_to_user(db, guest_id=guest_id, user_id=user.id)
+    migrated_documents = migrate_guest_documents_to_user(db, guest_id=guest_id, user_id=user.id)
     migrated_assessments = migrate_guest_assessments_to_user(db, guest_id=guest_id, user_id=user.id)
     db.commit()
 
-    if migrated_uploads or migrated_assessments:
+    if migrated_documents or migrated_assessments:
         logger.info(
-            "Merged guest session %s into user %s (%d uploads, %d assessments)",
+            "Merged guest session %s into user %s (%d documents, %d assessments)",
             guest_id,
             user.id,
-            migrated_uploads,
+            migrated_documents,
             migrated_assessments,
         )
 

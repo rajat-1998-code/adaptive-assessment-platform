@@ -1,1 +1,1 @@
-"""Upload records, ownable by either a guest session or an authenticated user."""
+"""Document records, with upload-module compatibility exports."""

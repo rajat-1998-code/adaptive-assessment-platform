@@ -13,7 +13,7 @@ from app.assessments import models as assessment_models  # noqa: F401, E402
 from app.auth import models as auth_models  # noqa: F401, E402
 from app.core.config import settings  # noqa: E402
 from app.core.database import Base  # noqa: E402
-from app.uploads import models as upload_models  # noqa: F401, E402
+from app.uploads import models as document_models  # noqa: F401, E402
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
