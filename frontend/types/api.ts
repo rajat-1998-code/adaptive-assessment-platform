@@ -61,3 +61,38 @@ export interface HealthStatusView {
   statusLabel: string;
   version?: string;
 }
+
+export interface DocumentMetadata {
+  id: string;
+  title: string;
+  original_filename: string;
+  content_type: string | null;
+  file_size: number | null;
+  processing_status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PaginatedDocuments {
+  items: DocumentMetadata[];
+  page: number;
+  page_size: number;
+  total: number;
+  pages: number;
+}
+
+export type DocumentSortBy =
+  | "created_at"
+  | "title"
+  | "original_filename"
+  | "processing_status";
+
+export interface DocumentListOptions {
+  page: number;
+  page_size: number;
+  search: string;
+  file_type: string;
+  status: string;
+  sort_by: DocumentSortBy;
+  sort_order: "asc" | "desc";
+}

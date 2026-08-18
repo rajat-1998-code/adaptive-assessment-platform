@@ -10,7 +10,7 @@ const NAV_ITEMS = [
   { label: "Dashboard", href: "#" },
   { label: "Features", href: "#" },
   { label: "Assessment", href: "#" },
-  { label: "Docs", href: "#" },
+  { label: "Docs", href: "/documents" },
   { label: "About", href: "#" },
 ];
 

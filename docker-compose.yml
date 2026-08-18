@@ -146,9 +146,14 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
       MINIO_BUCKET: ${MINIO_BUCKET:-uploads}
     entrypoint: ["/bin/sh", "-c"]
-    command: >-
-      mc alias set local http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}" &&
-      mc mb --ignore-existing "local/$${MINIO_BUCKET}"
+    command:
+      - |-
+        until mc alias set local http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}"; do
+          echo "Waiting for MinIO authentication..."
+          sleep 2
+        done
+        mc mb --ignore-existing "local/$${MINIO_BUCKET}"
+    restart: "no"
 
   mailhog:
     image: mailhog/mailhog:v1.0.1

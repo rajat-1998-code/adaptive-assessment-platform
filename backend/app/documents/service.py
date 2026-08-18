@@ -3,16 +3,19 @@
 from __future__ import annotations
 
 import logging
+import math
 import uuid
 from pathlib import PurePath
 
 from fastapi import UploadFile
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.guest.schemas import Identity
 from app.storage.service import StorageError, StorageService
 from app.uploads.models import Document
+from app.uploads.schemas import DocumentListQuery
 
 logger = logging.getLogger(__name__)
 
@@ -136,3 +139,83 @@ async def create_document_from_upload(
                 storage.delete_object(storage_key)
             except StorageError:
                 logger.exception("Failed to clean up object %s after database failure", storage_key)
+
+
+def _owned_documents_query(identity: Identity):
+    """Return the base query scoped to the current guest or user."""
+
+    if identity.user is not None:
+        return select(Document).where(Document.owner_user_id == identity.user.id)
+    return select(Document).where(Document.owner_guest_id == identity.guest_id)
+
+
+def _owned_documents_count_query(identity: Identity):
+    """Return a count query scoped to the current guest or user."""
+
+    if identity.user is not None:
+        return (
+            select(func.count())
+            .select_from(Document)
+            .where(Document.owner_user_id == identity.user.id)
+        )
+    return (
+        select(func.count())
+        .select_from(Document)
+        .where(Document.owner_guest_id == identity.guest_id)
+    )
+
+
+def _apply_document_filters(query, options: DocumentListQuery):
+    """Apply shared search and filter predicates to a document query."""
+
+    if options.search and options.search.strip():
+        search = f"%{options.search.strip()}%"
+        query = query.where(
+            or_(Document.title.ilike(search), Document.original_filename.ilike(search))
+        )
+
+    if options.file_type and options.file_type.strip():
+        file_type = options.file_type.strip().lower().lstrip(".")
+        query = query.where(Document.original_filename.ilike(f"%.{file_type}"))
+
+    if options.status and options.status.strip():
+        query = query.where(Document.processing_status == options.status.strip().lower())
+
+    return query
+
+
+def list_documents(
+    db: Session, *, identity: Identity, options: DocumentListQuery
+) -> tuple[list[Document], int]:
+    """Return the current owner's filtered document page and total count."""
+
+    filtered_query = _apply_document_filters(_owned_documents_query(identity), options)
+    count_query = _apply_document_filters(_owned_documents_count_query(identity), options)
+    total = db.scalar(count_query) or 0
+
+    sort_column = {
+        "created_at": Document.created_at,
+        "title": Document.title,
+        "original_filename": Document.original_filename,
+        "processing_status": Document.processing_status,
+    }[options.sort_by]
+    sort_expression = sort_column.asc() if options.sort_order == "asc" else sort_column.desc()
+    query = filtered_query.order_by(sort_expression, Document.id.asc())
+    offset = (options.page - 1) * options.page_size
+    documents = db.scalars(query.offset(offset).limit(options.page_size)).all()
+    return documents, total
+
+
+def get_owned_document(
+    db: Session, *, identity: Identity, document_id: uuid.UUID
+) -> Document | None:
+    """Fetch one document only when it belongs to the current identity."""
+
+    query = _owned_documents_query(identity).where(Document.id == document_id)
+    return db.scalar(query)
+
+
+def page_count(total: int, page_size: int) -> int:
+    """Calculate the number of available pages, including zero for no results."""
+
+    return math.ceil(total / page_size) if total else 0

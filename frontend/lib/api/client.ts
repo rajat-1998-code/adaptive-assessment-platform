@@ -25,6 +25,13 @@ class ApiClient {
       method: "POST",
     });
   }
+
+  postForm<T>(path: string, body: FormData): Promise<ApiResponse<T>> {
+    return httpRequest<T>(path, {
+      body,
+      method: "POST",
+    });
+  }
 }
 
 export const apiClient = new ApiClient();

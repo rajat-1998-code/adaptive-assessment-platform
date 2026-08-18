@@ -99,3 +99,203 @@ textarea {
 .mono-ui {
   font-family: var(--font-mono), monospace;
 }
+
+/* The upload surface already communicates supported types through its chips. */
+main .border-dashed > p.text-xs.text-slate-500 {
+  display: none;
+}
+
+main .border-dashed > div.mt-5.flex.flex-wrap {
+  display: flex;
+  width: 100%;
+  margin-top: 0;
+  gap: 0.35rem;
+  justify-content: space-between;
+}
+
+main .border-dashed > span {
+  padding: 0.7rem;
+}
+
+main .border-dashed > p.mt-5.text-lg {
+  margin-top: 0.7rem;
+}
+
+main .border-dashed > p.mt-2.text-sm {
+  margin-top: 0.25rem;
+  margin-bottom: 0.75rem;
+}
+
+main .border-dashed > div.mt-5.flex.flex-wrap > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border-radius: 0.35rem;
+  padding: 0.2rem 0.35rem;
+  font-size: .9rem;
+  line-height: 1;
+}
+
+main .border-dashed > div.mt-5.flex.flex-wrap > span::before {
+  width: 0.3rem;
+  height: 0.3rem;
+  border-radius: 0.08rem;
+  background: #ff8a2a;
+  content: "";
+}
+
+main .border-dashed > div.mt-5.flex.flex-wrap > span:nth-child(2n)::before {
+  background: #4f8cff;
+}
+
+main .border-dashed > div.mt-5.flex.flex-wrap > span:nth-child(3n)::before {
+  background: #46c878;
+}
+
+main .border-dashed > div.mt-5.flex.flex-wrap > span:nth-child(4n)::before {
+  background: #9b6cff;
+}
+
+main .border-dashed > button:last-child {
+  background: #f47713;
+  color: #ffffff;
+  cursor: pointer;
+  opacity: 1;
+  transition: filter 160ms ease, background-color 160ms ease;
+}
+
+main .border-dashed > button:last-child::before {
+  content: "↑";
+  margin-right: 0.45rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+main .border-dashed > button:last-child:hover:not(:disabled) {
+  background: #ff8a2a;
+  filter: brightness(1.08);
+}
+
+main .border-dashed > button:last-child:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+main section select {
+  color: #f8fafc;
+  background-color: #11161b;
+}
+
+main section select:focus {
+  border-color: #ff8a2a;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 138, 42, 0.18);
+}
+
+main section select option {
+  color: #f8fafc;
+  background-color: #1b2229;
+}
+
+  main .border-dashed > button:last-child {
+    top: calc(50% - 1rem);
+  }
+
+  @media (min-width: 768px) {
+  main > div > div.rounded-2xl > div.grid > div:first-child {
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  main .border-dashed {
+    padding-right: 12rem;
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  main .border-dashed > p.mt-5.text-lg {
+    font-size: 1.25rem;
+    line-height: 1.5;
+  }
+
+  main .border-dashed > p.mt-2.text-sm {
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  main .border-dashed > div.mt-5.flex.flex-wrap {
+    width: calc(100% + 12rem);
+    margin-right: -12rem;
+  }
+
+  main .border-dashed > span,
+  main .border-dashed > p.mt-5.text-lg,
+  main .border-dashed > p.mt-2.text-sm {
+    align-self: center;
+    text-align: center;
+    transform: translateX(-2rem);
+  }
+}
+
+main .border-dashed {
+  min-height: 125px;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+  background-color: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+main section.mt-8 {
+  margin-top: 0;
+}
+
+/* Join the upload header and document list into one continuous workspace panel. */
+main > div > div.rounded-2xl {
+  position: relative;
+  overflow: hidden;
+  padding-bottom: 0.5rem;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom: 0;
+}
+
+@media (min-width: 768px) {
+  main > div > div.rounded-2xl::after {
+    position: absolute;
+    top: 1rem;
+    bottom: 1rem;
+    left: 42%;
+    border-left: 1px dotted rgba(255, 255, 255, 0.22);
+    content: "";
+    pointer-events: none;
+  }
+}
+
+main section.mt-8 {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-top: 0;
+}
+
+main section.mt-8 > div:first-child {
+  position: relative;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  background: #151719;
+  border-radius: 0.75rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+}
+
+main section.mt-8 > div:first-child::before {
+  display: none;
+}
+
+main section.mt-8 > div.p-16 {
+  min-height: 360px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}

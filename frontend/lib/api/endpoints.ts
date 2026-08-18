@@ -11,6 +11,7 @@ export const API_ENDPOINTS = {
   authRegister: "/api/v1/auth/register",
   authResendOtp: "/api/v1/auth/resend-otp",
   authVerifyEmail: "/api/v1/auth/verify-email",
+  documents: "/api/v1/documents",
   health: "/health",
   readiness: "/health/ready",
 } as const;

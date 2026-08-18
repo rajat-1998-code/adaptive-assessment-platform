@@ -78,7 +78,7 @@ def upgrade() -> None:
                     created_at, updated_at
                 )
                 SELECT id, owner_user_id, owner_guest_id,
-                       regexp_replace(filename, '\.[^.]*$', ''), filename,
+                       regexp_replace(filename, '\\.[^.]*$', ''), filename,
                        content_type, size_bytes, NULL, 'uploaded',
                        created_at, updated_at
                 FROM uploads
